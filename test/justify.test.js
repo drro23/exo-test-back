@@ -1,4 +1,4 @@
-const justifyTextService = require('../src/api/services/JustifyTextService');
+const justifyTextService = require('../src/api/services/justifyTextService');
 
 describe('justify', () => {
     it('correctly with 16 lineMaxWidth', () => {
