@@ -1,7 +1,7 @@
 const jwt = require('jsonwebtoken');
 
 const generateAccessToken = (email) => {
-    return jwt.sign(email, process.env.TOKEN_SECRET, {expiresIn: '3600s'})
+    return jwt.sign(email, process.env.TOKEN_SECRET)
 }
 
 module.exports = {

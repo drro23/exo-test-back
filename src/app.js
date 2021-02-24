@@ -9,8 +9,9 @@ const authRouter = require('../src/api/routes/auth.route');
 
 const app = express()
 
-app.use(helmet());
 app.use(morgan('tiny'));
+
+app.use(helmet());
 
 app.use(cors())
 app.options('*', cors());
@@ -21,11 +22,5 @@ app.use(bodyParser.text());
 
 app.use('/api', justifyRouter);
 app.use('/api', authRouter);
-
-app.get('/', (req, res) => {
-    res.json({
-        message: 'Hello World'
-    });
-})
 
 module.exports = app;

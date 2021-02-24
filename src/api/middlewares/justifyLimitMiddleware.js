@@ -1,41 +1,33 @@
 const sqlDatabase = require('../../utils/sqlDatabase');
 const catchAsync = require('../../utils/catchAsync');
 const constants = require('../../utils/constants');
+const moment = require('moment');
 
 const justifyLimitMiddleware = catchAsync(async (req, res, next) => {
     const authHeader = req.headers['authorization']
     const token = authHeader && authHeader.split(' ')[1]
     let userLimit = await sqlDatabase.selectUserLimit(token)
+    let requestWords = 0;
+    if (Object.entries(req.body).length !== 0) {
+        requestWords = req.body.split(' ').length;
+    }
     if (Object.entries(userLimit).length === 0) {
-        let wordsCount = 0;
-        if (Object.entries(req.body).length !== 0) {
-            console.log(`justifyLimitMiddleware bodyLength ${req.body.split(' ').length}`);
-            wordsCount = req.body.split(' ').length;
-        }
-        await sqlDatabase.addUserTokenLimit(token, wordsCount, Date.now())
+        await sqlDatabase.addUserTokenLimit(token, requestWords, Date.now())
         next();
     }
-    if (userLimit?.justifyWords + req.body?.split(' ').length >= constants.WORD_LIMIT) {
-        let userDateTime = new Date(parseInt(userLimit.userDateTime));
-        let verificationDateTime = Date.now();
-        let newWordsLength = 0;
-        verificationDateTime.setTime(verificationDateTime.getTime() - 24);
-
-        if (userDateTime > verificationDateTime) {
-            if (Object.entries(req.body).length !== 0) {
-                newWordsLength = req.body.split(' ').length;
-            }
-            await sqlDatabase.updateUserLimitWordsAndDate(token, newWordsLength, Date.now());
+    if (userLimit?.justifyWords + requestWords >= constants.WORD_LIMIT) {
+        let userDateTime = moment(parseInt(userLimit.userDateTime));
+        let verificationDateTime = userDateTime.add(24, 'hours');
+        let todayDate = moment();
+        if (userDateTime >= todayDate && todayDate <= verificationDateTime) {
+            return res.sendStatus(402);
+        } else if (verificationDateTime < todayDate) {
+            await sqlDatabase.updateUserLimitWordsAndDate(token, requestWords, Date.now());
             next();
-        } else {
-            res.status(402);
-            return res.send();
         }
     } else {
-        if (Object.entries(req.body).length !== 0) {
-            let newWordsLength = userLimit.justifyWords + req.body.split(' ').length;
-            await sqlDatabase.updateUserLimitWords(token, newWordsLength);
-        }
+        let newWordsLength = userLimit.justifyWords + requestWords;
+        await sqlDatabase.updateUserLimitWords(token, newWordsLength);
     }
     next();
 })

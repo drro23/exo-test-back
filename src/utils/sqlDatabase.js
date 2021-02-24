@@ -9,19 +9,26 @@ let db = new sqlite3.Database('./src/database/database.db', (err) => {
 })
 
 const addUserTokenLimit = async (token, wordsLength, timestamp) => {
-    await new Promise((resolve, reject) => {
+    return new Promise((resolve, reject) => {
         db.serialize(() => {
-            console.log("wordLength: ", wordsLength)
-            db.exec(`insert into main.user_limits (token, justifyWords, user_datetime) values ('${token}', ${wordsLength}, '${timestamp}');`, (err) => {
+            db.run("insert or replace into user_limits ('token', 'user_datetime') values (?, ?);", [token.toString(), timestamp], (err) => {
                 if (err) {
                     console.log(`Insert new user limit error: ${err}`);
                     reject();
                 } else {
                     console.log('Insert success');
-                    resolve();
+                }
+            })
+            db.run('update user_limits set justifyWords = ? where token = ?', [wordsLength, token], (err) => {
+                if (err) {
+                    console.log(`update new user limit error: ${err}`);
+                    reject();
+                } else {
+                    console.log('update success');
                 }
             })
         })
+        resolve();
     });
 }
 
@@ -35,7 +42,6 @@ const selectUserLimit = async (token) => {
                     reject();
                 } else {
                     console.log('Select user limit success');
-                    console.log(`row: ${row}`)
                     if (row !== undefined) {
                         userLimit['token'] = row.token;
                         userLimit['justifyWords'] = row.justifyWords;
