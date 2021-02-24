@@ -4,6 +4,8 @@ const constants = require('../../utils/constants');
 const moment = require('moment');
 
 const justifyLimitMiddleware = catchAsync(async (req, res, next) => {
+    if (!req.is('text'))
+        return res.sendStatus(400);
     const authHeader = req.headers['authorization']
     const token = authHeader && authHeader.split(' ')[1]
     let userLimit = await sqlDatabase.selectUserLimit(token)
